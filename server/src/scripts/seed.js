@@ -1,5 +1,5 @@
 // Fills the database with demo data: an admin, theatres in 3 cities, movies from
-// TMDB and 3 days of shows. WARNING: wipes existing movies, theatres and shows.
+// TMDB and a week of shows. WARNING: wipes existing movies, theatres and shows.
 //
 //   npm run seed
 import mongoose from 'mongoose';
@@ -13,7 +13,7 @@ import { SeatLock } from '../models/SeatLock.js';
 import * as tmdb from '../services/tmdb.service.js';
 import { istDateTime, todayInIST } from '../utils/time.js';
 
-const DAYS = 3;
+const DAYS = 7;
 const SLOTS = ['10:00', '13:30', '17:00', '20:30'];
 
 const standardScreen = (name) => ({
