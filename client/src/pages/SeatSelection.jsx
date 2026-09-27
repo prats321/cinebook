@@ -10,6 +10,7 @@ import HoldSummary from '../components/HoldSummary.jsx';
 import { ErrorState, Spinner } from '../components/Status.jsx';
 import { ChevronLeftIcon } from '../components/icons.jsx';
 import { api } from '../lib/api.js';
+import { openCheckout } from '../lib/razorpay.js';
 import { formatDate, formatPrice, formatTime } from '../lib/format.js';
 import { MAX_SEATS, priceOf, sortSeats } from '../lib/seats.js';
 import NotFound from './NotFound.jsx';
@@ -86,6 +87,8 @@ export default function SeatSelection() {
   const [selected, setSelected] = useState(() => readPendingSeats(id));
   const [hold, setHold] = useState(null); // { seats, expiresAt } once the server has locked them
   const [busy, setBusy] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const payingRef = useRef(false); // read inside the countdown callback without re-subscribing
 
   useEffect(() => clearPendingSeats(id), [id]);
 
@@ -129,6 +132,9 @@ export default function SeatSelection() {
   }, [seats]); // only when new seat data arrives
 
   const secondsLeft = useCountdown(hold?.expiresAt, () => {
+    // Mid-payment, let the server decide: it confirms the booking if the seats are
+    // still free, or refunds if someone else bought them after the hold lapsed.
+    if (payingRef.current) return;
     setHold(null);
     toast.error('Your seat hold expired. Please select your seats again.');
     reload();
@@ -180,6 +186,40 @@ export default function SeatSelection() {
     }
   };
 
+  const pay = async () => {
+    setBusy(true);
+    setPaying(true);
+    payingRef.current = true;
+    try {
+      const checkout = await api.post('/bookings/checkout', { showId: id });
+      const response = await openCheckout({
+        keyId: checkout.keyId,
+        order: checkout.order,
+        description: checkout.description,
+        prefill: checkout.prefill,
+        onFailure: (message) => toast.error(message),
+      });
+      if (!response) {
+        toast.info('Payment cancelled. Your seats stay held until the timer runs out.');
+        return;
+      }
+      // The server checks Razorpay's signature before confirming anything.
+      const { booking } = await api.post('/bookings/verify', response);
+      navigate(`/bookings/${booking._id}`, { replace: true, state: { justBooked: true } });
+    } catch (err) {
+      toast.error(err.message);
+      if (err.status === 409) {
+        // Hold expired before checkout, or the seats were sold while paying (refund is automatic).
+        setHold(null);
+        reload();
+      }
+    } finally {
+      payingRef.current = false;
+      setPaying(false);
+      setBusy(false);
+    }
+  };
+
   const changeSeats = async () => {
     setBusy(true);
     try {
@@ -227,7 +267,9 @@ export default function SeatSelection() {
           seats={hold.seats}
           secondsLeft={secondsLeft}
           onChangeSeats={changeSeats}
-          releasing={busy}
+          onPay={pay}
+          busy={busy}
+          paying={paying}
         />
       ) : (
         ordered.length > 0 &&
