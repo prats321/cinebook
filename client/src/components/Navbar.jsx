@@ -82,6 +82,13 @@ function UserMenu() {
               <p className="truncate text-sm font-semibold">{user.name}</p>
               <p className="truncate text-xs text-zinc-400">{user.email}</p>
             </div>
+            <Link
+              to="/bookings"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 text-sm hover:bg-ink-800"
+            >
+              My bookings
+            </Link>
             <button onClick={onLogout} className="w-full px-4 py-2.5 text-left text-sm hover:bg-ink-800">
               Sign out
             </button>
