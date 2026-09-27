@@ -4,6 +4,7 @@ import { Theatre } from '../models/Theatre.js';
 import { SeatLock } from '../models/SeatLock.js';
 import * as seatLock from '../services/seatLock.service.js';
 import { AppError } from '../utils/AppError.js';
+import { notifySeatsChanged } from '../realtime.js';
 
 // Cleaning + ads between two shows on the same screen.
 const BUFFER_MINUTES = 20;
@@ -32,12 +33,18 @@ export async function getSeats(req, res) {
 
 export async function lockSeats(req, res) {
   const show = await findShow(req.params.id);
-  const lock = await seatLock.lockSeats(show, req.body.seats, req.user._id);
-  res.json({ success: true, ...lock });
+  try {
+    const lock = await seatLock.lockSeats(show, req.body.seats, req.user._id);
+    res.json({ success: true, ...lock });
+  } finally {
+    // Even a failed attempt may have released this user's previous hold.
+    notifySeatsChanged(show._id);
+  }
 }
 
 export async function releaseSeats(req, res) {
   await seatLock.releaseSeats(req.params.id, req.user._id);
+  notifySeatsChanged(req.params.id);
   res.json({ success: true });
 }
 

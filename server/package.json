@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.2",
     "morgan": "^1.12.1",
+    "socket.io": "^4.8.4",
     "zod": "^4.6.5"
   }
 }

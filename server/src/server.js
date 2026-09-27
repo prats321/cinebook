@@ -2,12 +2,14 @@ import mongoose from 'mongoose';
 import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
 import app from './app.js';
+import { initRealtime } from './realtime.js';
 
 await connectDB();
 
 const server = app.listen(env.port, () => {
   console.log(`API running on http://localhost:${env.port} (${env.nodeEnv})`);
 });
+initRealtime(server);
 
 // Render sends SIGTERM on every deploy: finish in-flight requests, then close the DB.
 function shutdown(signal) {

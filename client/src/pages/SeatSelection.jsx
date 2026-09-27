@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useApi } from '../hooks/useApi.js';
 import { useCountdown } from '../hooks/useCountdown.js';
+import { useShowUpdates } from '../hooks/useShowUpdates.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import SeatMap, { SeatLegend } from '../components/SeatMap.jsx';
@@ -13,8 +14,9 @@ import { formatDate, formatPrice, formatTime } from '../lib/format.js';
 import { MAX_SEATS, priceOf, sortSeats } from '../lib/seats.js';
 import NotFound from './NotFound.jsx';
 
-// Until live updates arrive via WebSockets, re-check seat availability every 15s.
-const POLL_MS = 15_000;
+// Seat changes arrive live over Socket.io. This slow poll is only a safety net
+// in case the socket is blocked (some office/college networks) or drops quietly.
+const POLL_MS = 60_000;
 
 // A guest's picks survive the trip to the login page and back.
 const pendingKey = (showId) => `cinebook:pending-seats:${showId}`;
@@ -45,16 +47,25 @@ function savePendingSeats(showId, seats) {
   }
 }
 
-function ShowHeader({ show }) {
+function ShowHeader({ show, live }) {
   return (
     <div className="border-b border-ink-800 bg-ink-900">
       <div className="mx-auto max-w-5xl px-4 py-4">
-        <Link
-          to={`/movies/${show.movie._id}/shows`}
-          className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200"
-        >
-          <ChevronLeftIcon className="size-4" /> Change showtime
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            to={`/movies/${show.movie._id}/shows`}
+            className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200"
+          >
+            <ChevronLeftIcon className="size-4" /> Change showtime
+          </Link>
+          <span
+            title={live ? 'Seat changes appear instantly' : 'Reconnecting… seats refresh every minute'}
+            className="flex items-center gap-1.5 text-xs text-zinc-400"
+          >
+            <span className={`inline-block size-2 rounded-full ${live ? 'animate-pulse bg-emerald-400' : 'bg-zinc-600'}`} />
+            {live ? 'Live' : 'Offline'}
+          </span>
+        </div>
         <h1 className="mt-1 text-xl font-bold">{show.movie.title}</h1>
         <p className="text-sm text-zinc-400">
           {show.theatre.name} · {formatDate(show.startTime)}, {formatTime(show.startTime)} · {show.format} · {show.screenName}
@@ -83,6 +94,7 @@ export default function SeatSelection() {
   const held = useMemo(() => new Set(seats?.locked), [seats]);
 
   const { reload } = seatsReq;
+  const live = useShowUpdates(id, reload);
   useEffect(() => {
     const timer = setInterval(reload, POLL_MS);
     return () => clearInterval(timer);
@@ -185,7 +197,7 @@ export default function SeatSelection() {
 
   return (
     <div className={hold ? 'pb-56 sm:pb-44' : 'pb-32'}>
-      <ShowHeader show={show} />
+      <ShowHeader show={show} live={live} />
 
       <div className="mx-auto max-w-5xl px-4 pt-8">
         {started ? (

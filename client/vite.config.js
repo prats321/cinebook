@@ -10,6 +10,7 @@ export default defineConfig({
     // so the auth cookie just works without any CORS setup.
     proxy: {
       '/api': 'http://localhost:5000',
+      '/socket.io': { target: 'http://localhost:5000', ws: true },
     },
   },
 });

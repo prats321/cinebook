@@ -6,6 +6,7 @@ import { seatCategory } from '../models/seatLayout.js';
 import * as razorpay from './razorpay.service.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
+import { notifySeatsChanged } from '../realtime.js';
 
 // Step 1: turn the user's seat hold into a PENDING booking plus a Razorpay order.
 // The price is computed here from the show's prices, never taken from the client.
@@ -84,6 +85,7 @@ export async function confirmPayment(orderId, paymentId) {
 
   // The user was charged but gets no seats: give the money back.
   if (seatsTaken) await refund(booking);
+  else if (booking.status === 'CONFIRMED') notifySeatsChanged(booking.show);
   return booking;
 }
 
@@ -119,6 +121,7 @@ export async function cancelBooking(bookingId, user) {
     await session.endSession();
   }
 
+  notifySeatsChanged(booking.show);
   await refund(booking);
   return booking;
 }
