@@ -61,6 +61,16 @@ export const lockSeatsSchema = z.object({
     .refine((seats) => new Set(seats).size === seats.length, 'Duplicate seats'),
 });
 
+export const checkoutSchema = z.object({
+  showId: objectId,
+});
+
+export const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+});
+
 export const updateMovieSchema = z.object({
   isActive: z.boolean().optional(),
   runtime: z.number().int().min(1).max(400).optional(),
