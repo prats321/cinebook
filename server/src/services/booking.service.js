@@ -87,6 +87,42 @@ export async function confirmPayment(orderId, paymentId) {
   return booking;
 }
 
+export const CANCEL_CUTOFF_HOURS = 2;
+
+export function canCancel(booking, show) {
+  const cutoff = new Date(show.startTime).getTime() - CANCEL_CUTOFF_HOURS * 3_600_000;
+  return booking.status === 'CONFIRMED' && Date.now() < cutoff;
+}
+
+// Frees the seats and marks the booking cancelled in one transaction, then refunds.
+export async function cancelBooking(bookingId, user) {
+  let booking;
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      booking = await Booking.findById(bookingId).session(session);
+      if (!booking) throw new AppError('Booking not found', 404);
+      if (!booking.user.equals(user._id)) throw new AppError('You can only cancel your own bookings', 403);
+      if (booking.status !== 'CONFIRMED') throw new AppError('Only confirmed bookings can be cancelled', 409);
+
+      const show = await Show.findById(booking.show).session(session);
+      if (!canCancel(booking, show)) {
+        throw new AppError(`Tickets can be cancelled up to ${CANCEL_CUTOFF_HOURS} hours before the show`, 400);
+      }
+
+      await Show.updateOne({ _id: show._id }, { $pullAll: { bookedSeats: booking.seats } }, { session });
+      booking.status = 'CANCELLED';
+      booking.cancelledAt = new Date();
+      await booking.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  await refund(booking);
+  return booking;
+}
+
 export async function refund(booking) {
   if (!booking.payment?.paymentId || booking.payment.refundId) return;
   try {
