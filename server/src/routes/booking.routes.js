@@ -6,7 +6,12 @@ import { checkoutSchema, verifyPaymentSchema } from '../validators.js';
 
 const router = Router();
 
-router.post('/checkout', protect, validate(checkoutSchema), bookings.checkout);
-router.post('/verify', protect, validate(verifyPaymentSchema), bookings.verifyPayment);
+router.use(protect);
+
+router.post('/checkout', validate(checkoutSchema), bookings.checkout);
+router.post('/verify', validate(verifyPaymentSchema), bookings.verifyPayment);
+router.get('/me', bookings.myBookings);
+router.get('/:id', bookings.getBooking);
+router.post('/:id/cancel', bookings.cancel);
 
 export default router;
