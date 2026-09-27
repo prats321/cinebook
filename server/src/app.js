@@ -10,6 +10,8 @@ import authRoutes from './routes/auth.routes.js';
 import movieRoutes from './routes/movie.routes.js';
 import theatreRoutes from './routes/theatre.routes.js';
 import showRoutes from './routes/show.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
+import { webhook as paymentWebhook } from './controllers/booking.controller.js';
 
 const app = express();
 
@@ -19,6 +21,11 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: env.clientUrl, credentials: true }));
+
+// Registered before express.json(): the signature is computed over the exact raw bytes,
+// and re-serialising parsed JSON would not reproduce them.
+app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '1mb' }), paymentWebhook);
+
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 if (!isProd) app.use(morgan('dev'));
@@ -30,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/theatres', theatreRoutes);
 app.use('/api/shows', showRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

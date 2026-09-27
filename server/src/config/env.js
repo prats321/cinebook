@@ -16,6 +16,9 @@ export const env = {
   tmdbToken: process.env.TMDB_READ_TOKEN,
   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
+  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
+  // Overridable so tests can point at a local stub instead of the real API.
+  razorpayApiUrl: process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1',
   seatLockMinutes: Number(process.env.SEAT_LOCK_MINUTES) || 5,
 };
 
