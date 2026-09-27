@@ -32,7 +32,7 @@ duplicate-key error. The race is settled by the database, not by application cod
 cd server
 npm install
 cp .env.example .env   # fill in MONGODB_URI, JWT_SECRET, TMDB_READ_TOKEN
-npm run seed           # admin user, 6 theatres, TMDB movies, 3 days of shows
+npm run seed           # admin user, 6 theatres, TMDB movies, a week of shows
 npm run dev            # http://localhost:5000
 ```
 
