@@ -21,7 +21,7 @@ export async function listMovies(req, res) {
 
   const [movies, total] = await Promise.all([
     Movie.find(filter)
-      .select('-cast -overview')
+      .select('-cast')
       .sort({ releaseDate: status === 'upcoming' ? 1 : -1 })
       .skip((page - 1) * limit)
       .limit(limit)
