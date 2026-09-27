@@ -26,6 +26,18 @@
   }
 }
 
+/* Printing a ticket: white page, no site chrome. */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  header,
+  footer {
+    display: none;
+  }
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
