@@ -7,6 +7,7 @@ import Home from './pages/Home.jsx';
 import Movies from './pages/Movies.jsx';
 import MovieDetails from './pages/MovieDetails.jsx';
 import Showtimes from './pages/Showtimes.jsx';
+import SeatSelection from './pages/SeatSelection.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
       { path: 'movies', element: <Movies /> },
       { path: 'movies/:id', element: <MovieDetails /> },
       { path: 'movies/:id/shows', element: <Showtimes /> },
+      { path: 'shows/:id', element: <SeatSelection /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: '*', element: <NotFound /> },
