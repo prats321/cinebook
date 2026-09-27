@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { CATEGORY_LABELS, groupRows } from '../lib/seats.js';
 import { formatPrice } from '../lib/format.js';
 
@@ -49,8 +50,16 @@ export function SeatLegend() {
 
 // statusOf(seatId) -> 'available' | 'selected' | 'booked' | 'held'
 export default function SeatMap({ layout, prices, statusOf, onToggle, disabled = false }) {
+  // On phones the map is wider than the screen. Start scrolled to the middle so the
+  // centre seats (the ones most people want) are in view, instead of the left edge.
+  const scrollerRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+  }, []); // once on mount: re-running on every 15s poll would yank the user's scroll position
+
   return (
-    <div className="scrollbar-none overflow-x-auto pb-2">
+    <div ref={scrollerRef} className="scrollbar-none overflow-x-auto pb-2">
       <div className="mx-auto w-max min-w-full space-y-6 px-2">
         {groupRows(layout).map(({ category, rows }) => (
           <section key={rows[0].label}>
