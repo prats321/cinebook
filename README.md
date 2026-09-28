@@ -2,7 +2,12 @@
 
 A full-stack movie ticket booking website, like BookMyShow. Built with the MERN stack.
 
-**Stack:** React 19 + Vite + Tailwind v4 · Node.js + Express 5 · MongoDB + Mongoose · TMDB API · Razorpay test mode (in progress)
+**🔗 Live demo: https://cinebook-peach.vercel.app**
+
+> Payments run in Razorpay **test mode**: no real money moves. Choose Netbanking and click
+> "Success" on the test bank page. The API sleeps when idle, so the first load can take ~30s.
+
+**Stack:** React 19 + Vite + Tailwind v4 · Node.js + Express 5 · Socket.io · MongoDB + Mongoose · TMDB API · Razorpay (test mode)
 
 ## Features
 
@@ -13,6 +18,9 @@ A full-stack movie ticket booking website, like BookMyShow. Built with the MERN 
 - **Seat locking that prevents double booking** (see below), with a 5-minute hold and countdown
 - Guests can pick seats, sign in, and come back with their selection intact
 - Search, genre and language filters that live in the URL (shareable, survive refresh)
+- Payments with Razorpay: verified signatures, webhooks, automatic refunds when a seat was sold first
+- My Bookings with QR-code tickets and cancellation up to 2 hours before the show
+- Live seat availability over Socket.io
 - Admin API: import movies, manage theatres and screens, schedule shows (with clash detection)
 - Validation with Zod, centralized error handling, rate limiting, Helmet security headers
 - Responsive down to phone width, keyboard and screen-reader friendly seat buttons
@@ -56,6 +64,28 @@ npm run dev            # http://localhost:5173
 In development Vite proxies `/api` to the Express server, so the auth cookie works
 without any CORS setup. In production, set `VITE_API_URL` to the deployed API.
 
+## Deployment
+
+| Part | Host | Notes |
+|---|---|---|
+| Website | Vercel (`client/`) | `vercel.json` rewrites `/api/*` to Render and serves `index.html` for client routes |
+| API | Render free tier (`server/`) | Defined as code in `render.yaml` (Blueprint); auto-deploys on push to `main` |
+| Database | MongoDB Atlas M0 | Separate `cinebook-prod` database, so local testing never touches live data |
+
+Design decisions worth knowing:
+
+- **Same-origin API through a rewrite.** The browser only ever talks to the Vercel domain,
+  so the auth cookie is first-party (`SameSite=Lax`). A cross-site cookie would be blocked
+  by Safari and Firefox as a third-party cookie.
+- **Sockets go direct to Render**, since Vercel rewrites can't proxy WebSockets. Seat rooms
+  carry no personal data, so they don't need the cookie.
+- **`TRUST_PROXY=2`**: requests pass through Vercel and Render's proxy, so Express needs to
+  skip both hops to see the visitor's real IP for rate limiting.
+- **The server schedules its own showtimes**, keeping 7 days of shows on every screen, so the
+  demo never goes stale.
+- **Payments are confirmed twice-safe**: by the browser's verify call and by a signed Razorpay
+  webhook, in an idempotent transaction.
+
 ## API
 
 | Method | Endpoint | Access |
@@ -74,6 +104,10 @@ without any CORS setup. In production, set `VITE_API_URL` to the deployed API.
 | GET | `/api/shows/:id` · `/api/shows/:id/seats` | public |
 | POST / DELETE | `/api/shows/:id/lock` | user |
 | POST / DELETE | `/api/shows(/:id)` | admin |
+| POST | `/api/bookings/checkout` · `/api/bookings/verify` | user |
+| GET | `/api/bookings/me` · `/api/bookings/:id` | user |
+| POST | `/api/bookings/:id/cancel` | user |
+| POST | `/api/payments/webhook` | Razorpay (signed) |
 
 ## Project structure
 
