@@ -9,7 +9,7 @@ function formatClock(seconds) {
 }
 
 // Order summary shown while the user's seats are held for them.
-export default function HoldSummary({ layout, prices, seats, secondsLeft, onChangeSeats, releasing }) {
+export default function HoldSummary({ layout, prices, seats, secondsLeft, onChangeSeats, onPay, busy, paying }) {
   const ordered = sortSeats(layout, seats);
 
   const lines = {};
@@ -54,20 +54,20 @@ export default function HoldSummary({ layout, prices, seats, secondsLeft, onChan
             <div className="flex gap-2">
               <button
                 onClick={onChangeSeats}
-                disabled={releasing}
+                disabled={busy}
                 className="flex-1 rounded-lg border border-ink-600 px-4 py-2.5 text-sm font-semibold hover:bg-ink-800 disabled:opacity-60 sm:flex-none"
               >
                 Change seats
               </button>
               <button
-                disabled
-                title="Online payment is coming soon"
-                className="flex-1 rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white opacity-60 sm:flex-none"
+                onClick={onPay}
+                disabled={busy}
+                className="flex-1 rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60 sm:flex-none"
               >
-                Pay {formatPrice(total)}
+                {paying ? 'Processing…' : `Pay ${formatPrice(total)}`}
               </button>
             </div>
-            <p className="text-xs text-zinc-500">Online payment is coming soon.</p>
+            <p className="text-xs text-zinc-500">Secure payment by Razorpay · Test mode, no real money</p>
           </div>
         </div>
       </div>
