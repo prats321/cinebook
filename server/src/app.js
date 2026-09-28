@@ -30,7 +30,10 @@ app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 if (!isProd) app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => res.json({ success: true, status: 'ok' }));
+const health = (req, res) => res.json({ success: true, status: 'ok' });
+app.get('/api/health', health);
+// Uptime monitors and people opening the API URL in a browser usually hit "/".
+app.get('/', health);
 
 app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
