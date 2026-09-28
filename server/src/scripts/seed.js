@@ -1,5 +1,5 @@
 // Fills the database with demo data: an admin, theatres in 3 cities, movies from
-// TMDB and a week of shows. WARNING: wipes existing movies, theatres and shows.
+// TMDB and a week of shows. WARNING: wipes existing movies, theatres, shows and bookings.
 //
 //   npm run seed
 import mongoose from 'mongoose';
@@ -10,11 +10,9 @@ import { Movie } from '../models/Movie.js';
 import { Theatre } from '../models/Theatre.js';
 import { Show } from '../models/Show.js';
 import { SeatLock } from '../models/SeatLock.js';
+import { Booking } from '../models/Booking.js';
 import * as tmdb from '../services/tmdb.service.js';
-import { istDateTime, todayInIST } from '../utils/time.js';
-
-const DAYS = 7;
-const SLOTS = ['10:00', '13:30', '17:00', '20:30'];
+import { ensureUpcomingShows, DAYS_AHEAD } from '../services/showScheduler.service.js';
 
 const standardScreen = (name) => ({
   name,
@@ -39,11 +37,6 @@ const THEATRES = [
   { name: 'PVR Orion Mall', city: 'Bengaluru', address: 'Rajajinagar, Bengaluru', screens: [standardScreen('Audi 1'), standardScreen('Audi 2')] },
   { name: 'INOX Garuda Mall', city: 'Bengaluru', address: 'Magrath Road, Bengaluru', screens: [standardScreen('Screen 1')] },
 ];
-
-const PRICES = {
-  '2D': { RECLINER: 450, PREMIUM: 280, NORMAL: 200 },
-  '3D': { RECLINER: 550, PREMIUM: 350, NORMAL: 260 },
-};
 
 // Used only when TMDB_READ_TOKEN isn't set, so the app still has something to show.
 const FALLBACK_MOVIES = [
@@ -91,60 +84,16 @@ async function seedMovies() {
   return Movie.insertMany(movies);
 }
 
-async function seedShows(theatres, movies) {
-  const today = todayInIST();
-  const lastDay = new Date(`${today}T23:59:59+05:30`);
-  lastDay.setDate(lastDay.getDate() + DAYS - 1);
-
-  // Only movies already released (or releasing within the seeded days) get shows.
-  const playable = movies.filter((m) => !m.releaseDate || m.releaseDate <= lastDay);
-  if (!playable.length) return console.log('- no released movies, skipping shows');
-
-  const shows = [];
-  let i = 0;
-  for (let d = 0; d < DAYS; d++) {
-    const date = new Date(`${today}T12:00:00+05:30`);
-    date.setDate(date.getDate() + d);
-    const dateStr = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-
-    for (const theatre of theatres) {
-      for (const screen of theatre.screens) {
-        for (const slot of SLOTS) {
-          const startTime = istDateTime(dateStr, slot);
-          const movie = playable[i++ % playable.length];
-          if (startTime <= new Date() || (movie.releaseDate && movie.releaseDate > startTime)) continue;
-
-          const format = i % 5 === 0 ? '3D' : '2D';
-          shows.push({
-            movie: movie._id,
-            theatre: theatre._id,
-            screenId: screen._id,
-            screenName: screen.name,
-            city: theatre.city,
-            startTime,
-            endTime: new Date(startTime.getTime() + movie.runtime * 60_000),
-            format,
-            language: movie.language,
-            prices: PRICES[format],
-            layout: screen.rows,
-          });
-        }
-      }
-    }
-  }
-  await Show.insertMany(shows);
-  console.log(`- created ${shows.length} shows over ${DAYS} days`);
-}
-
 await connectDB();
 console.log('Seeding...');
 
-await Promise.all([Movie.deleteMany(), Theatre.deleteMany(), Show.deleteMany(), SeatLock.deleteMany()]);
+// Bookings go too: a booking whose show no longer exists would break My Bookings.
+await Promise.all([Movie.deleteMany(), Theatre.deleteMany(), Show.deleteMany(), SeatLock.deleteMany(), Booking.deleteMany()]);
 await seedAdmin();
 const theatres = await Theatre.insertMany(THEATRES);
 console.log(`- created ${theatres.length} theatres`);
-const movies = await seedMovies();
-await seedShows(theatres, movies);
+await seedMovies();
+console.log(`- created ${await ensureUpcomingShows()} shows over the next ${DAYS_AHEAD} days`);
 
 console.log('Done.');
 await mongoose.connection.close();
