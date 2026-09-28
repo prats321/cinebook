@@ -6,12 +6,13 @@ import { AppError } from '../utils/AppError.js';
 const TOKEN_TTL_DAYS = 7;
 
 // httpOnly: JavaScript in the browser can't read the token, so an XSS bug can't steal it.
-// sameSite 'none' + secure in production because the frontend (Vercel) and API (Render)
-// live on different domains.
+// sameSite 'lax' works everywhere because the browser only ever talks to one site: in dev
+// Vite proxies /api, in production Vercel rewrites /api to Render. A cross-site cookie
+// (sameSite 'none') would be a third-party cookie, which Safari and Firefox block.
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: isProd ? 'none' : 'lax',
+  sameSite: 'lax',
   maxAge: TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
 };
 

@@ -13,7 +13,9 @@ const SWEEP_MS = 15_000;
 
 export function initRealtime(httpServer) {
   io = new Server(httpServer, {
-    cors: { origin: env.clientUrl, credentials: true },
+    // Sockets connect straight to Render (Vercel rewrites can't proxy WebSockets),
+    // so this one really is cross-origin. Rooms are public, so no cookie is needed.
+    cors: { origin: env.clientUrls },
   });
 
   io.on('connection', (socket) => {

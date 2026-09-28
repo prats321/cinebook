@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Always same-origin: Vite (dev) and Vercel (prod) forward /api to the Express server,
+// which keeps the auth cookie first-party.
+const BASE_URL = '/api';
 
 export class ApiError extends Error {
   constructor(message, status, details) {
