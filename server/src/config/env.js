@@ -12,7 +12,11 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  // Comma-separated, e.g. "https://cinebook.vercel.app,http://localhost:5173"
+  clientUrls: (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map((u) => u.trim()).filter(Boolean),
+  // How many proxies sit in front of the app. Render alone = 1; Vercel rewrite -> Render = 2.
+  // Needed so req.ip is the real visitor and rate limits aren't shared by everyone.
+  trustProxy: Number(process.env.TRUST_PROXY ?? 1),
   tmdbToken: process.env.TMDB_READ_TOKEN,
   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,

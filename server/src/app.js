@@ -17,10 +17,10 @@ const app = express();
 
 // Render/AWS put a proxy in front of us; needed for correct client IPs (rate limiting)
 // and for secure cookies to be set over their HTTPS.
-app.set('trust proxy', 1);
+app.set('trust proxy', env.trustProxy);
 
 app.use(helmet());
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+app.use(cors({ origin: env.clientUrls, credentials: true }));
 
 // Registered before express.json(): the signature is computed over the exact raw bytes,
 // and re-serialising parsed JSON would not reproduce them.
