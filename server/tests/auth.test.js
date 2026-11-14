@@ -64,7 +64,7 @@ describe('auth', () => {
 
   it('keeps admin routes admin-only', async () => {
     const user = await api.newUser();
-    const body = { name: 'X', city: 'Delhi', screens: [{ name: 'S1', rows: [{ label: 'A', category: 'NORMAL', seats: 5 }] }] };
+    const body = { name: 'Test Cinema', city: 'Delhi', screens: [{ name: 'S1', rows: [{ label: 'A', category: 'NORMAL', seats: 5 }] }] };
     assert.equal((await api.post('/theatres', body, { cookie: user })).status, 403);
     assert.equal((await api.post('/theatres', body)).status, 401);
     assert.equal((await api.post('/theatres', body, { cookie: await adminCookie(api) })).status, 201);
