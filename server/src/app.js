@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import { env, isProd } from './config/env.js';
+import { env } from './config/env.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { notFound, errorHandler } from './middleware/error.js';
 import authRoutes from './routes/auth.routes.js';
@@ -28,7 +28,7 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit:
 
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
-if (!isProd) app.use(morgan('dev'));
+if (env.nodeEnv === 'development') app.use(morgan('dev'));
 
 const health = (req, res) => res.json({ success: true, status: 'ok' });
 app.get('/api/health', health);

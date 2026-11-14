@@ -25,5 +25,8 @@
     "morgan": "^1.12.1",
     "socket.io": "^4.8.4",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0"
   }
 }
